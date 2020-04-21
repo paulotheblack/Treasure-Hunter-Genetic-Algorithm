@@ -16,14 +16,14 @@ import copy
 
 
 class Assembler:
-    def __init__(self, board, start_position, treasures_total):
-        self.memory = generate_memory()
-        self.last_move = 'None'
-        self.route = []
-        self.treasures_found = 0
-        self.board = copy.deepcopy(board)  # game board
+    def __init__(self, memory, board, start_position, treasures_total):
+        self.memory = memory # generate_memory() # TODO refactor according to assigment
+        self.board = copy.deepcopy(board)  # copy gameboard -> to be able to grab the treasure
         self.position = start_position
         self.treasures_total = treasures_total
+        self.treasures_found = 0
+        self.route = []
+        self.last_move = 'None'
 
 
     # return:
@@ -32,11 +32,12 @@ class Assembler:
     #     1 -> 500 iterations done
     #     2 -> out of index
     # @treasures_found -> cim viac tym lepsie
-    # @route -> ?
+    # @route -> mnozstvo krokov
+    # IK: sort by Treasures found + Moves made
     def run(self):
         program_counter = 0
 
-        for steps in range(500):
+        for clock in range(500):
             instruction, address = parse_cell(self.memory[program_counter])
 
             if instruction == 0:  # INC
@@ -52,14 +53,14 @@ class Assembler:
                     program_counter = address + 1
                     self.route.append(self.last_move)
 
-                    # Check if all treasures have been found
+                    # --<Found all treasures>--
                     if self.treasures_found == self.treasures_total:
-                        return 0, self.treasures_found, self.route
+                        return 0, self.treasures_found, self.route, self.kap_fitness()
                 else:  # --<Out of Index>--
-                    return 2, self.treasures_found, self.route
+                    return 2, self.treasures_found, self.route, self.kap_fitness()
 
         # --<Terminated after 500>--
-        return 1, self.treasures_found, self.route
+        return 1, self.treasures_found, self.route, self.kap_fitness()
 
     def mov(self, address):
         direction = address & 0b000011
@@ -67,7 +68,7 @@ class Assembler:
         # UP
         if direction == 0:
             if self.position[0] == 0:
-                return 666
+                return 666  # --<Move Out of Index>--
             self.position[0] -= 1
             self.last_move = 'U'  # TEST
 
@@ -94,8 +95,17 @@ class Assembler:
 
         # Check for treasure
         if self.board[(self.position[0], self.position[1])] == 1:
-            # osetri, ze repetetivnost
-            # deepcopy boardu ==> prepisovat hodnotu
+            # mark tile as already found treasure
             self.board[(self.position[0], self.position[1])] = 5
             self.treasures_found += 1
         return 0
+
+    def paulo_fitness(self):
+        bounty = self.treasures_found / self.treasures_total
+        if len(self.route) != 0:
+            return (bounty / len(self.route))*100
+        return 0
+
+    # move
+    def kap_fitness(self):
+        return (1 + self.treasures_found - len(self.route)/1000)

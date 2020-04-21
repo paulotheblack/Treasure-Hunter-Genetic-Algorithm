@@ -10,8 +10,8 @@ def main():
     hunters = []
 
     for i in range(100):
-        exit, treasures, route = Assembler(board, start_position, treasures_total).run()
-        hunters.append([exit, treasures, len(route), Assembler])
+        exit, treasures, route, fitness = Assembler(generate_memory(), board, start_position, treasures_total).run()
+        hunters.append([exit, treasures, len(route), fitness, Assembler])
 
     # TODO sort by 2 values
     # ---------------------------
@@ -19,12 +19,13 @@ def main():
     # ----------------------------
     # import operator
     # list1 = sorted(csv1, key=operator.itemgetter(1, 2))
-    hunters.sort(key = lambda hunters: hunters[1], reverse=True)
+    hunters.sort(key = lambda hunters: hunters[3], reverse=True)
 
     for el in hunters:
         print(  'exit: ' +  str(el[0]) +
                ' treas: ' + str(el[1]) +
-               ' moves: ' + str(el[2]))
+               ' moves: ' + str(el[2]) +
+               '|=> iq: ' + str(el[3]))
 
 if __name__ == '__main__':
     main()

@@ -10,6 +10,7 @@ import random
 
 # get config of board, generate board
 # return board, treasures_indexes, start_position
+# TODO implement '#' to stop reading => comment config file
 def generate_board():
     config = open('input.conf', 'r')
 
@@ -31,7 +32,7 @@ def generate_board():
 
     # get all treasure's coordinates
     treasures_indexes = []
-    for element in range(treasures_no + 1):
+    for element in range(treasures_no):
         buffer = config.readline().split()
         index = convert(buffer)
         treasures_indexes.append(index)
@@ -53,7 +54,7 @@ def convert(arr):
                 _char = int(char)
                 digit_arr.append(_char)
         return digit_arr
-    else:
+    else:  # TODO check if correct (may return string)
         return int(arr[0])
 
 
