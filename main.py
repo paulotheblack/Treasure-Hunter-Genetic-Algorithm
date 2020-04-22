@@ -1,5 +1,5 @@
 from helper import *
-from assembler import *
+
 
 # prvych 2 zoberiem, a presuniem ich do novej generacii (elitisti)
 # prvych 70 skrizim (hybridi) s urcitou pravedpodobnostou (30%)
@@ -15,32 +15,33 @@ from assembler import *
 
 
 def main():
-    print('Treasure Hunter by Mike v0.1')
+    print('Treasure Hunter v1.1')
     board, start_position, treasures_total = generate_board()
     board_info = [board, start_position, treasures_total]
-    print(board)
+    # print(board)
 
     year = 0
     gen = get_randoms(100, board_info)
     gen = sorted(gen, reverse=True)
 
-    while year <= 100:
+    while True:
         elite = get_elite(gen)
         hybrids = get_hybrids(60, gen, board_info) # mutacia vznika az potomkovy
         mutants = get_mutants(hybrids, board_info)
         randoms = get_randoms(30, board_info)
 
         gen.clear()
-        gen = elite[:] + hybrids[:] + mutants[:]
+        gen = elite[:] + hybrids[:] + mutants[:] + randoms[:]
         gen = sorted(gen, reverse=True)
 
         year += 1
-
-        if year == 99:
-            choice = input('continue?(y/n): ')
+        if year % 1000 == 0:
+            print('Year: ' + str(year))
+            print('Population: ' + str(len(gen)))
             test_print(gen[:10])
-            if choice == 'y':
-                year = 0
+            # choice = input('continue?(y/n): ')
+            # if choice == 'y':
+            #     year = 0
 
 
 if __name__ == '__main__':

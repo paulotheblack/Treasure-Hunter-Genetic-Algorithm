@@ -1,4 +1,5 @@
 import copy
+import sys
 
 """
 ------- # ------------ #
@@ -33,14 +34,6 @@ class Assembler:
     def __lt__(self, other):
         return self.fitness < other.fitness
 
-    # return:
-    # @exit type:
-    #     0 -> all treasures found
-    #     1 -> 500 iterations done
-    #     2 -> out of index
-    # @treasures_found
-    # @route
-    # @fitness
     def run(self):
         program_counter = 0
 
@@ -60,9 +53,7 @@ class Assembler:
                     program_counter = address + 1
                     if self.treasures_found == self.treasures_total:  # --<Found all treasures>--
                         self.fitness = self.get_fitness()
-                        print('nasiel som sicke')
-                        print('dorob vypis')
-                        return self, quit(666)
+                        return self.winner()
                 else:  # --<Out of Index>--
                     self.fitness = self.get_fitness()
                     return self
@@ -114,12 +105,21 @@ class Assembler:
 
         return 0  # Successful move
 
-    def paulo_fitness(self):
-        bounty = self.treasures_found / self.treasures_total
-        if len(self.route) != 0:
-            return (bounty / len(self.route)) * 100
-        return 0
-
-    # move
     def get_fitness(self):
         return 1 + self.treasures_found - len(self.route) / 1000
+
+    # move
+    # def paulo_fitness(self):
+    #     bounty = self.treasures_found / self.treasures_total
+    #     if len(self.route) != 0:
+    #         return (bounty / len(self.route)) * 100
+    #     return 0
+
+    def winner(self):
+        print('Hello I am the winner')
+        print('I found ' + str(self.treasures_found) + ' treasures' +
+              ' in ' + str(len(self.route)) + ' steps')
+        print('My journey: ' + str(self.route))
+        print('My iQ: ' + str(self.fitness))
+        print(self.board)
+        sys.exit('Job done.')

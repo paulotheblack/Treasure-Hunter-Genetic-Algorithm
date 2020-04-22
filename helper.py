@@ -9,7 +9,6 @@ import random
 import copy
 from assembler import Assembler
 
-
 # get config of board, generate board
 # return board, treasures_indexes, start_position
 # TODO implement '#' to stop reading => comment config file
@@ -111,8 +110,9 @@ def get_hybrids(quantity, parents, board_info):
             child = Assembler(child_memory, board_info[0], board_info[1], board_info[2]).run()
             hybrids.append(child)
         else:
-            hybrids.append(parents[x])
-            hybrids.append(parents[y])
+            if x != 0: # aby sa elitari nekopirovali pod seba
+                hybrids.append(parents[x])
+                hybrids.append(parents[y])
         x += 2
         y += 2
 
@@ -123,21 +123,24 @@ def get_elite(parents):
     return parents[:2]
 
 
+# index (0,64)
+# obsah bunky (0, 255)
+# 4 druhy mutacie?
 def get_mutants(parents, board_info):
     mutation = []
     for hunter in parents:
-        if random.uniform(0, 1) >= 0.7:
+        if random.uniform(0, 1) <= 0.7:
+            mutate_index = random.randint(0, 63)
             enchanted_memory = copy.deepcopy(hunter.memory)
-            enchanted_memory[random.randint(0, 63)] += 1
-
+            enchanted_memory[mutate_index] += 1
             mutant = Assembler(enchanted_memory, board_info[0], board_info[1], board_info[2]).run()
             mutation.append(mutant)
     return mutation
 
 
-def test_print(generation): # generation = list(hunters)
+def test_print(generation):
     print('# -------------------------------- #')
     for hunter in generation:
-        print('Treas: ' + str(hunter.treasures_found)
-              + ' Steps: ' + str(len(hunter.route))
-              + ' IQ: ' + str(hunter.fitness))
+        print('Treasures: ' + str(hunter.treasures_found) +
+              ' Steps: ' + str(len(hunter.route)) +
+              ' IQ: ' + str(hunter.fitness))
