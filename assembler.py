@@ -22,14 +22,16 @@ def parse_cell(cell):
 
 
 class Assembler:
-    def __init__(self, memory, board, start_position, treasures_total):
+    def __init__(self, memory, board):
         self.memory = memory
-        self.board = copy.deepcopy(board)  # copy gameboard -> to be able to grab the treasure
-        self.position = start_position
-        self.treasures_total = treasures_total
+        self.board = copy.deepcopy(board[0])  # copy gameboard -> to be able to grab the treasure
+        self.position = copy.deepcopy(board[1])
+        self.treasures_total = board[2]
         self.treasures_found = 0
         self.route = []
         self.fitness = 0
+        self.stderr = 'None'
+        self.orig_memory = copy.deepcopy(memory)
 
     def __lt__(self, other):
         return self.fitness < other.fitness
@@ -53,12 +55,16 @@ class Assembler:
                     program_counter = address + 1
                     if self.treasures_found == self.treasures_total:  # --<Found all treasures>--
                         self.fitness = self.get_fitness()
-                        return self.winner()
+                        self.stderr = 'Found all treasures'
+                        return self
+
                 else:  # --<Out of Index>--
                     self.fitness = self.get_fitness()
+                    self.stderr = 'Out of Index'
                     return self
 
         self.fitness = self.get_fitness()
+        self.stderr = '500 Iterations'
         return self  # --<Terminated after 500>--
 
     def mov(self, address):
@@ -67,33 +73,33 @@ class Assembler:
 
         # UP
         if direction == 0:
-            self.route.append('U')
             if self.position[0] != 0:
                 self.position[0] -= 1
+                self.route.append('U')
             else:
                 return 666  # --<Move Out of Index>--
 
         # DOWN
         if direction == 1:
-            self.route.append('D')
             if self.position[0] != len(self.board) - 1:
                 self.position[0] += 1
+                self.route.append('D')
             else:
                 return 666
 
         # LEFT
         if direction == 2:
-            self.route.append('L')
             if self.position[1] != 0:
                 self.position[1] -= 1
+                self.route.append('L')
             else:
                 return 666
 
         # RIGHT
         if direction == 3:
-            self.route.append('R')
             if self.position[1] != len(self.board[1]) - 1:
                 self.position[1] += 1
+                self.route.append('R')
             else:
                 return 666
 
@@ -102,24 +108,12 @@ class Assembler:
             # mark tile as already found treasure
             self.board[(self.position[0], self.position[1])] = 5
             self.treasures_found += 1
+            return 0
 
+        # visualize movement, do not overwrite found treasure with another step on tile
+        if self.board[(self.position[0], self.position[1])] != 5:
+            self.board[(self.position[0], self.position[1])] = 3
         return 0  # Successful move
 
     def get_fitness(self):
         return 1 + self.treasures_found - len(self.route) / 1000
-
-    # move
-    # def paulo_fitness(self):
-    #     bounty = self.treasures_found / self.treasures_total
-    #     if len(self.route) != 0:
-    #         return (bounty / len(self.route)) * 100
-    #     return 0
-
-    def winner(self):
-        print('Hello I am the winner')
-        print('I found ' + str(self.treasures_found) + ' treasures' +
-              ' in ' + str(len(self.route)) + ' steps')
-        print('My journey: ' + str(self.route))
-        print('My iQ: ' + str(self.fitness))
-        print(self.board)
-        sys.exit('Job done.')

@@ -1,47 +1,64 @@
 from helper import *
 
 
-# prvych 2 zoberiem, a presuniem ich do novej generacii (elitisti)
-# prvych 70 skrizim (hybridi) s urcitou pravedpodobnostou (30%)
-# prvych 70 zmutujem (mutanti) s pravdepodobnostou (1:70, teda priemerne jeden mutant na generaciu) a potom tu pravdepodobnost mierne zvysujem
-# 28 jedincov nahodne vygenerujem
+def world(plt):
+    board, start_position, treasures_total = generate_board()
+    board_info = [board, start_position, treasures_total]
 
-# "Tournament  selection scheme  has been  used between  two individuals and uniform crossover is applied
-# on two individuals with probability of 0.8. Mutation is applied on a gene of an
-# individual with  probability of 1/number of  variables. Generational
-# without elitism replacement scheme is used and population  size  is determined  as  100. "
+    typ = input('Tournament == 0, Roulette == 1: => ')
 
-# hunters.sort(key=lambda hunters: hunters[2], reverse=True)
+    year = 0
+    _years = []
+    population_fitness = []
+
+    generation = get_randoms(Const.POPULATION_Q, board_info)
+    generation = search_board(generation)
+    generation.sort(reverse=True)
+
+    while True:
+        if get_result(generation, year) == 0:
+            if plt == 'y' and year >= 100:
+                fitness_plot(population_fitness, _years)
+            return
+
+        elites = get_elite(generation, board_info)
+
+        children = get_children(typ, generation, board_info)
+
+        mutants = get_mutants(children, board_info)
+        randoms = get_randoms(Const.RANDOM_Q, board_info)
+
+        generation.clear()
+
+        generation = elites[:] + children[:] + mutants[:] + randoms[:]
+        generation = search_board(generation)
+        generation.sort(reverse=True)
+
+        year += 1
+
+        if year % 100 == 0:
+            _years.append(year)
+            # [:Const.POPULATION_Q - Const.RANDOM_Q]
+            gen_fitness = generation_fitness(generation)
+            population_fitness.append(gen_fitness)
+
+        if year % 10000 == 0:
+            if input('10 000 years passed. Quit? (y/n) ') == 'y':
+                return
 
 
 def main():
-    print('Treasure Hunter v1.1')
-    board, start_position, treasures_total = generate_board()
-    board_info = [board, start_position, treasures_total]
-    # print(board)
+    Const.print_settings()
+    x = 0
+    while x < 1:
+        plt = input('\nDo you want to see plot of fitness function? (y/n) ')
 
-    year = 0
-    gen = get_randoms(100, board_info)
-    gen = sorted(gen, reverse=True)
-
-    while True:
-        elite = get_elite(gen)
-        hybrids = get_hybrids(60, gen, board_info) # mutacia vznika az potomkovy
-        mutants = get_mutants(hybrids, board_info)
-        randoms = get_randoms(30, board_info)
-
-        gen.clear()
-        gen = elite[:] + hybrids[:] + mutants[:] + randoms[:]
-        gen = sorted(gen, reverse=True)
-
-        year += 1
-        if year % 1000 == 0:
-            print('Year: ' + str(year))
-            print('Population: ' + str(len(gen)))
-            test_print(gen[:10])
-            # choice = input('continue?(y/n): ')
-            # if choice == 'y':
-            #     year = 0
+        world(plt)
+        if input('\nDo you want to be the God one more time? (y/n) ') == 'y':
+            x = 0
+        else:
+            print('Goodbye!')
+            sys.exit(0)
 
 
 if __name__ == '__main__':
