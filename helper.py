@@ -6,6 +6,8 @@ url: http://www2.fiit.stuba.sk/~kapustik/poklad.html
 """
 import numpy as np
 import random
+import copy
+from assembler import Assembler
 
 
 # get config of board, generate board
@@ -41,7 +43,7 @@ def generate_board():
         board[treasure[0], treasure[1]] = 1
 
     config.close()
-    return board, treasures_no, start_position
+    return board, start_position, treasures_no
 
 
 # convert to 'int' if digit
@@ -78,10 +80,64 @@ def generate_memory():
     return memory
 
 
-# get instruction, value
-# TODO check if correct
-def parse_cell(cell):
-    instruction = cell >> 6
-    address = cell & 0b001111
-    return instruction, address
+# ------------------------------------------ #
+def get_randoms(quantity, board_info):
+    randoms = []
+    for i in range(quantity):
+        hunter = Assembler(generate_memory(), board_info[0], board_info[1], board_info[2]).run()
+        randoms.append(hunter)
+    return randoms
 
+
+def memory_cross(x, y):
+    child_memory = []
+    _x = x[:32]
+    for cell in _x:
+        child_memory.append(cell)
+    _y = y[32:]
+    for cell in _y:
+        child_memory.append(cell)
+    return child_memory
+
+
+def get_hybrids(quantity, parents, board_info):
+    x = 0  # index of first
+    y = 1  # index of second
+    hybrids = []
+    while x <= quantity:
+        if random.uniform(0, 1) <= 0.3:
+            child_memory = memory_cross(parents[x].memory, parents[y].memory)
+            # RUN AND SEARCH BOARD
+            child = Assembler(child_memory, board_info[0], board_info[1], board_info[2]).run()
+            hybrids.append(child)
+        else:
+            hybrids.append(parents[x])
+            hybrids.append(parents[y])
+        x += 2
+        y += 2
+
+    return hybrids
+
+
+def get_elite(parents):
+    return parents[:2]
+
+
+def get_mutants(parents, board_info):
+    mutation = []
+    for hunter in parents:
+        if random.uniform(0, 1) >= 0.7:
+            enchanted_memory = copy.deepcopy(hunter.memory)
+            enchanted_memory[random.randint(0, 63)] += 1
+
+            mutant = Assembler(enchanted_memory, board_info[0], board_info[1], board_info[2]).run()
+            mutation.append(mutant)
+    return mutation
+
+
+def test_print(generation): # generation = list(hunters)
+    print('# -------------------------------- #')
+    for hunter in generation:
+        print('Treas: ' + str(hunter.treasures_found)
+              + ' Steps: ' + str(len(hunter.route))
+              + ' IQ: ' + str(hunter.fitness))

@@ -1,31 +1,47 @@
 from helper import *
 from assembler import *
 
+# prvych 2 zoberiem, a presuniem ich do novej generacii (elitisti)
+# prvych 70 skrizim (hybridi) s urcitou pravedpodobnostou (30%)
+# prvych 70 zmutujem (mutanti) s pravdepodobnostou (1:70, teda priemerne jeden mutant na generaciu) a potom tu pravdepodobnost mierne zvysujem
+# 28 jedincov nahodne vygenerujem
+
+# "Tournament  selection scheme  has been  used between  two individuals and uniform crossover is applied
+# on two individuals with probability of 0.8. Mutation is applied on a gene of an
+# individual with  probability of 1/number of  variables. Generational
+# without elitism replacement scheme is used and population  size  is determined  as  100. "
+
+# hunters.sort(key=lambda hunters: hunters[2], reverse=True)
+
 
 def main():
     print('Treasure Hunter by Mike v0.1')
-    board, treasures_total, start_position = generate_board()
+    board, start_position, treasures_total = generate_board()
+    board_info = [board, start_position, treasures_total]
     print(board)
 
-    hunters = []
+    year = 0
+    gen = get_randoms(100, board_info)
+    gen = sorted(gen, reverse=True)
 
-    for i in range(100):
-        exit, treasures, route, fitness = Assembler(generate_memory(), board, start_position, treasures_total).run()
-        hunters.append([exit, treasures, len(route), fitness, Assembler])
+    while year <= 100:
+        elite = get_elite(gen)
+        hybrids = get_hybrids(60, gen, board_info) # mutacia vznika az potomkovy
+        mutants = get_mutants(hybrids, board_info)
+        randoms = get_randoms(30, board_info)
 
-    # TODO sort by 2 values
-    # ---------------------------
-    # sorted(list, key=lambda x: (x[0], -x[1]))
-    # ----------------------------
-    # import operator
-    # list1 = sorted(csv1, key=operator.itemgetter(1, 2))
-    hunters.sort(key = lambda hunters: hunters[3], reverse=True)
+        gen.clear()
+        gen = elite[:] + hybrids[:] + mutants[:]
+        gen = sorted(gen, reverse=True)
 
-    for el in hunters:
-        print(  'exit: ' +  str(el[0]) +
-               ' treas: ' + str(el[1]) +
-               ' moves: ' + str(el[2]) +
-               '|=> iq: ' + str(el[3]))
+        year += 1
+
+        if year == 99:
+            choice = input('continue?(y/n): ')
+            test_print(gen[:10])
+            if choice == 'y':
+                year = 0
+
 
 if __name__ == '__main__':
     main()
