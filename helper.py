@@ -10,12 +10,13 @@ import copy
 from assembler import Assembler
 from constants import Const
 import matplotlib.pyplot as plot
-import sys
 
-
-# get config of board, generate board
-# return board, treasures_indexes, start_position
-# TODO implement '#' to stop reading => comment config file
+# Vygenerovanie hracej dosky zo suboru ./input.conf
+# struktura suboru:
+# rozmer hracej dosky (m, n): 7 7
+# startovanice pozicia (m, n): 6 3
+# pocet pokladov: 4
+# adresy pokladov (m, n): ...
 def generate_board():
     config = open('input.conf', 'r')
 
@@ -50,7 +51,6 @@ def generate_board():
 
 
 # convert to 'int' if digit
-# return array or int (depends of @par arr)
 def convert(arr):
     if len(arr) != 1:
         digit_arr = []
@@ -59,7 +59,7 @@ def convert(arr):
                 _char = int(char)
                 digit_arr.append(_char)
         return digit_arr
-    else:  # TODO check if correct (may return string)
+    else:
         return int(arr[0])
 
 
@@ -72,9 +72,10 @@ def get_position(array, element):
         return position[0]
     return position
 
-
-# ------------------------------------------ #
-# random 64-memory cells (0, 255)
+# ----------------------------------------- #
+#           Memory manipulation             #
+# ----------------------------------------- #
+# Vygenerovanie nahodnej pamate 64 buniek (0, 255)
 def generate_memory():
     memory = []
     for i in range(64):
@@ -82,34 +83,7 @@ def generate_memory():
         memory.append(cell)
     return memory
 
-
-# board_info = [board, start_position, treasures_total]
-# Assembler(memory, board, start_position, treasures_total)
-# ------------------------------------------ #
-def get_randoms(quantity, board):
-    randoms = []
-    for i in range(quantity):
-        hunter = Assembler(generate_memory(), board)
-        randoms.append(hunter)
-    return randoms
-
-
-
-def search_board(generation):
-    for hunter in generation:
-        hunter.run()
-    return sorted(generation, reverse=True)
-
-
-def get_result(generation, year):
-    for hunter in generation:
-        if hunter.stderr == 'Found all treasures':
-            winner(hunter, year)
-            return 0
-            #     sys.exit('Job done')  # continue? --> N
-            # else: return 1  # continue --> Y
-
-
+# Krizenie (nezmenych) pamati rodicov
 def memory_cross(parents):
     child_memory = []
     x_chrom = parents[0].orig_memory[:32]
@@ -121,27 +95,66 @@ def memory_cross(parents):
         child_memory.append(cell)
     return child_memory
 
-
+# ----------------------------------------- #
+#               Miscellaneous               #
+# ----------------------------------------- #
+# Vyber rodicov turnaj
 def tournament(generation):
     parents = []
-    # get 2 random parents
     for i in range(2):
+        # Vyberie 2 nahodnych jedincov z celej generacie
         _parents = random.choices(generation, k=2)
+        # Porovna fitness a ten "lepsi" sa stava rodicom
         _parents.sort(reverse=True)
         parents.append(_parents[0])
     return parents
 
-
+# Vyber rodicov ruleta
 def roulette(generation):
+    # Z celej generacie vybera 2 nahodnych
+    # (s pridanou vahou, cim vyssia fitness tym vacsia pravdepodobnost vyberu jedinca)
     return random.choices(generation, weights=[hunter.fitness for hunter in generation], k=2)
 
+# Zbehnutie programu pre celu generaciu a zoradenie podla fitness
+def search_board(generation):
+    for hunter in generation:
+        hunter.run()
+    return sorted(generation, reverse=True)
 
+# Overenie ci niektory hladac nasiel vsetky poklady
+def get_result(generation, year):
+    for hunter in generation:
+        if hunter.stderr == 'Found all treasures':
+            winner(hunter, year)
+            return 0
+
+def winner(hunter, year):
+    print('\nHello I am the winner')
+    print('Found ' + str(hunter.treasures_found) + ' treasures' +
+          ' in ' + str(len(hunter.route)) + ' steps')
+    print('My journey: ' + str(hunter.route))
+    print('My fitness: ' + str(hunter.fitness))
+    print('Year: ' + str(year))
+    print(hunter.board)
+
+# ----------------------------------------- #
+#           Population management           #
+# ----------------------------------------- #
+# Ziskanie nahodnych jedincov
+def get_randoms(quantity, board):
+    randoms = []
+    for i in range(quantity):
+        hunter = Assembler(generate_memory(), board)
+        randoms.append(hunter)
+    return randoms
+
+# pomocna funkcia pre krizenie
 def get_children(typ, generation, board):
     if typ == 0:
         return get_children_tournament(Const.TOURNAMENT_Q, generation, board)
     else: return get_children_roulette(Const.ROULETTE_Q, generation, board)
 
-
+# Krizenie Turnaj
 def get_children_tournament(quantity, generation, board):
     children = []
     for i in range(quantity):
@@ -151,7 +164,7 @@ def get_children_tournament(quantity, generation, board):
         children.append(child)
     return children
 
-
+# Krizenie ruleta
 def get_children_roulette(quantity, generation, board):
     children = []
     for i in range(quantity):
@@ -161,61 +174,49 @@ def get_children_roulette(quantity, generation, board):
         children.append(child)
     return children
 
-
-def get_elite(parents, board):
+# Elitny jedincy
+def get_elite(generation, board):
     elits = []
-    _elits = parents[:Const.ELITE_Q]
+    _elits = generation[:Const.ELITE_Q]
     for hunter in _elits:
         elite_hunter = Assembler(hunter.orig_memory, board)
         elits.append(elite_hunter)
     return elits
 
-
-# zmen kazdu druhu bunku v memory!!!
-def get_mutants(parents, board):
+# Mutacia pri krizemie
+# Kazda druha bunka pamate je generovana nahodne (k povodnej pamati)
+# povodny jedinec je vyradeny a do novej generacie je priradeny len mutant
+def get_mutants(generation, board):
     mutation = []
-    for hunter in parents:
+    for hunter in generation:
         if random.uniform(0, 1) <= Const.MUTATION_PROB:
-            mutate_index = random.randint(0, 63)
-            enchanted_memory = copy.deepcopy(hunter.memory)
-            enchanted_memory[mutate_index] += 1
+            enchanted_memory = copy.deepcopy(hunter.orig_memory)
+            for i in range (64):
+                if i % 2 == 0:
+                    enchanted_memory[i] = random.randint(0b00000000, 0b11111111)
+            generation.remove(hunter)
             mutant = Assembler(enchanted_memory, board)
             mutation.append(mutant)
     return mutation
 
-
-# ------------------------------------------ #
+# ----------------------------------------- #
+#               Plotting misc.              #
+#           by default turned off           #
+#       becuase of matplotlib dependency    #
+# ----------------------------------------- #
 def generation_fitness(generation):
     fitness = 0
-
     for hunter in generation:
         fitness += hunter.fitness
     return fitness/len(generation)
 
 
 def fitness_plot(population_fitness, years):
-    plot.plot(years, population_fitness)
-    plot.xlabel('year')
-    plot.ylabel('fitness')
-    plot.show()
-
-
-def test_print(generation):
-    print('# -------------------------------- #')
-    for hunter in generation:
-        print('Treasures: ' + str(hunter.treasures_found) +
-              ' Steps: ' + str(len(hunter.route)) +
-              ' IQ: ' + str(hunter.fitness))
-
-
-def winner(hunter, year):
-    print('\nHello I am the winner')
-    print('I found ' + str(hunter.treasures_found) + ' treasures' +
-          ' in ' + str(len(hunter.route)) + ' steps')
-    print('My journey: ' + str(hunter.route))
-    print('My iQ: ' + str(hunter.fitness))
-    print('Year: ' + str(year))
-    print(hunter.board)
-    # if input('continue?(y/n) ') == 'y':
-    #     return 1
-    # else: return 0
+    try:
+        plot.plot(years, population_fitness)
+        plot.xlabel('year')
+        plot.ylabel('fitness')
+        plot.show()
+    except ModuleNotFoundError as e:
+        print(e)
+        print('Not supported for plotting')

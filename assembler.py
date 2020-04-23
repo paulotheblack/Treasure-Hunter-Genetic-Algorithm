@@ -21,25 +21,30 @@ def parse_cell(cell):
     return instruction, address
 
 
+# Predstavuje entitu jedneho hladaca pokladov
+# Kazdy hladac ma svoj vlastny stroj
 class Assembler:
     def __init__(self, memory, board):
-        self.memory = memory
-        self.board = copy.deepcopy(board[0])  # copy gameboard -> to be able to grab the treasure
-        self.position = copy.deepcopy(board[1])
-        self.treasures_total = board[2]
+        self.memory = memory  # pamat jedinca
+        self.board = copy.deepcopy(board[0])  # kopia hracej dosky
+        self.position = copy.deepcopy(board[1])  # kopia startovacej pozicie
+        self.treasures_total = board[2]  # celkovy pocet pokladov
         self.treasures_found = 0
-        self.route = []
+        self.route = []  # cesta akou sa hladac pohyboval po hracej doske
         self.fitness = 0
-        self.stderr = 'None'
-        self.orig_memory = copy.deepcopy(memory)
+        self.stderr = 'None'  # sposob ukoncenia
+        self.orig_memory = copy.deepcopy(memory)  # nezmenena pamat jedinca, vyuzivana pri krizeni
 
+    # sposob sortovania: podla fitness
     def __lt__(self, other):
         return self.fitness < other.fitness
 
+    # Hladacov program
     def run(self):
         program_counter = 0
 
         for clock in range(500):
+            # zistenie instrukcie a adresy/hodnoty z aktualnej bunky pamate
             instruction, address = parse_cell(self.memory[program_counter])
 
             if instruction == 0:  # INC
@@ -67,6 +72,7 @@ class Assembler:
         self.stderr = '500 Iterations'
         return self  # --<Terminated after 500>--
 
+    # funckia "vypisu" / pohybu na hracej doske
     def mov(self, address):
         _instruction, _address = parse_cell(self.memory[address])
         direction = _address & 0b000011
@@ -85,7 +91,7 @@ class Assembler:
                 self.position[0] += 1
                 self.route.append('D')
             else:
-                return 666
+                return 666  # --<Move Out of Index>--
 
         # LEFT
         if direction == 2:
@@ -93,7 +99,7 @@ class Assembler:
                 self.position[1] -= 1
                 self.route.append('L')
             else:
-                return 666
+                return 666  # --<Move Out of Index>--
 
         # RIGHT
         if direction == 3:
@@ -101,19 +107,22 @@ class Assembler:
                 self.position[1] += 1
                 self.route.append('R')
             else:
-                return 666
+                return 666  # --<Move Out of Index>--
 
         # Check for treasure
         if self.board[(self.position[0], self.position[1])] == 1:
-            # mark tile as already found treasure
+            # Oznacenie policka ako najdeneho pokladu
+            # zabranuje repetivnosti
             self.board[(self.position[0], self.position[1])] = 5
             self.treasures_found += 1
             return 0
 
-        # visualize movement, do not overwrite found treasure with another step on tile
+        # Vizualizacie pohybu na hracej doske
         if self.board[(self.position[0], self.position[1])] != 5:
+            # Oznacenie policka ako navstiveneho
             self.board[(self.position[0], self.position[1])] = 3
         return 0  # Successful move
 
+    # Vypocet fitness funkcie
     def get_fitness(self):
         return 1 + self.treasures_found - len(self.route) / 1000
