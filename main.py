@@ -54,7 +54,7 @@ def world(plt):
         year += 1
 
         # Plotting, not used by default.
-        if year % 100 == 0:
+        if year % 50 == 0:
             _years.append(year)
             gen_fitness = generation_fitness(generation)
             population_fitness.append(gen_fitness)
@@ -70,8 +70,8 @@ def main():
     while x < 1:
         # Plotting of fitness function (requires matplotlib installed, or to be run in Pycharm IDE).
         # default is 'n'
-        plt = 'n'
-        # plt = input('\nDo you want to see plot of fitness function? (y/n) ')
+        # plt = 'n'
+        plt = input('\nDo you want to see plot of fitness function? (y/n) ')
 
         world(plt)
         if input('\nDo you want to be the God one more time? (y/n) ') == 'y':

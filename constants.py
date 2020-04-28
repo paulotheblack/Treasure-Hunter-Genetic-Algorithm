@@ -1,7 +1,7 @@
 class Const:
     POPULATION_Q = 100
     RANDOM_Q = int(POPULATION_Q/3)
-    ELITE_Q = 0
+    ELITE_Q = 2
     TOURNAMENT_Q = int(2 * POPULATION_Q / 3)
     ROULETTE_Q = int(2 * POPULATION_Q / 3)
     MUTATION_PROB = 0.05  # 0 > prob > 1
